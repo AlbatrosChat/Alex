@@ -147,15 +147,16 @@
 
 <script>
 let CUR_USER = ""; let VIEWING_USER = ""; let CURRENT_VIEW = 'entry'; let EDIT_ID = null; const MASTER = "Ali";
-const defaultUsers = [{u:"Ali", p:"8866"},{u:"A1", p:"0188"},{u:"A2", p:"0288"},{u:"A3", p:"0388"},{u:"A4", p:"0488"},{u:"A5", p:"0588"},{u:"A6", p:"0688"},{u:"A7", p:"0788"},{u:"A8", p:"0888"},{u:"A9", p:"0988"},{u:"A10", p:"1088"}];
+// تحديث كلمة السر للمدير إلى 8899
+const defaultUsers = [{u:"Ali", p:"8899"},{u:"A1", p:"0188"},{u:"A2", p:"0288"},{u:"A3", p:"0388"},{u:"A4", p:"0488"},{u:"A5", p:"0588"},{u:"A6", p:"0688"},{u:"A7", p:"0788"},{u:"A8", p:"0888"},{u:"A9", p:"0988"},{u:"A10", p:"1088"}];
 
 const db = {
-    tx: () => JSON.parse(localStorage.getItem('alex_db_final_v3') || '[]'),
-    save: (d) => localStorage.setItem('alex_db_final_v3', JSON.stringify(d)),
-    users: () => JSON.parse(localStorage.getItem('alex_u_final_v3')) || defaultUsers,
-    setS: (u) => localStorage.setItem('alex_s_final_v3', u),
-    getS: () => localStorage.getItem('alex_s_final_v3'),
-    clearS: () => localStorage.removeItem('alex_s_final_v3')
+    tx: () => JSON.parse(localStorage.getItem('alex_db_v15') || '[]'),
+    save: (d) => localStorage.setItem('alex_db_v15', JSON.stringify(d)),
+    users: () => JSON.parse(localStorage.getItem('alex_users_v15')) || defaultUsers,
+    setS: (u) => localStorage.setItem('alex_sess_v15', u),
+    getS: () => localStorage.getItem('alex_sess_v15'),
+    clearS: () => localStorage.removeItem('alex_sess_v15')
 };
 
 const ui = {
