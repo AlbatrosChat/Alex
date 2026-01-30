@@ -57,6 +57,10 @@
 
         .hidden { display: none !important; }
         .whatsapp-link { color: #25d366 !important; font-weight: bold; }
+        
+        /* شكل قسم النسخ الاحتياطي */
+        #sectionBackup { text-align: center; }
+        .backup-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -91,7 +95,10 @@
             <div id="dropMenu" class="drop-content">
                 <button onclick="ui.view('entry')"><i class="fas fa-plus-circle" style="color:var(--emerald)"></i> إضافة حركة</button>
                 <button onclick="ui.view('monthly')"><i class="fas fa-chart-pie" style="color:var(--indigo)"></i> الجرد والتقارير</button>
-                <div id="ownerOnly" class="hidden"><button onclick="ui.view('staff')"><i class="fas fa-user-shield"></i> الموظفين</button></div>
+                <div id="ownerOnly" class="hidden">
+                    <button onclick="ui.view('staff')"><i class="fas fa-user-shield"></i> الموظفين</button>
+                    <button onclick="ui.view('backup')"><i class="fas fa-database" style="color:var(--warning)"></i> نسخة احتياطية</button>
+                </div>
                 <button onclick="admin.exportExcel()"><i class="fas fa-file-excel" style="color:#16a34a"></i> تصدير إكسل</button>
                 <a href="https://wa.me/963988668481" target="_blank" class="whatsapp-link"><i class="fab fa-whatsapp"></i> تواصل واتساب</a>
                 <button onclick="auth.logout()" style="color:var(--danger)"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</button>
@@ -111,6 +118,20 @@
                 <input type="text" id="inNote" placeholder="بيان الحركة...">
             </div>
             <button class="btn-main" id="saveBtn" onclick="core.save()">حفظ العملية</button>
+        </div>
+
+        <div id="sectionBackup" class="card hidden">
+            <h3>النسخ الاحتياطي والاستعادة 🛡️</h3>
+            <p style="font-size: 0.85rem; color: #64748b;">استخدم هذه الأزرار لحماية بياناتك من الحذف عند تحديث المتصفح.</p>
+            <div class="backup-btns">
+                <button class="btn-main" onclick="admin.downloadBackup()" style="background:var(--navy)">
+                    <i class="fas fa-download"></i> تحميل نسخة
+                </button>
+                <button class="btn-main" onclick="document.getElementById('importFile').click()" style="background:var(--indigo)">
+                    <i class="fas fa-upload"></i> استعادة نسخة
+                </button>
+                <input type="file" id="importFile" class="hidden" accept=".json" onchange="admin.restoreBackup(event)">
+            </div>
         </div>
 
         <div id="sectionMonthly" class="card hidden">
@@ -147,7 +168,6 @@
 
 <script>
 let CUR_USER = ""; let VIEWING_USER = ""; let CURRENT_VIEW = 'entry'; let EDIT_ID = null; const MASTER = "Ali";
-// تحديث كلمة السر للمدير إلى 8899
 const defaultUsers = [{u:"Ali", p:"8899"},{u:"A1", p:"0188"},{u:"A2", p:"0288"},{u:"A3", p:"0388"},{u:"A4", p:"0488"},{u:"A5", p:"0588"},{u:"A6", p:"0688"},{u:"A7", p:"0788"},{u:"A8", p:"0888"},{u:"A9", p:"0988"},{u:"A10", p:"1088"}];
 
 const db = {
@@ -172,6 +192,7 @@ const ui = {
         document.getElementById('sectionEntry').classList.toggle('hidden', v !== 'entry');
         document.getElementById('sectionMonthly').classList.toggle('hidden', v !== 'monthly');
         document.getElementById('sectionStaff').classList.toggle('hidden', v !== 'staff');
+        document.getElementById('sectionBackup').classList.toggle('hidden', v !== 'backup');
         if(v === 'staff') admin.renderStaffList();
         document.getElementById('dropMenu').classList.remove('show');
         core.render();
@@ -221,7 +242,7 @@ const core = {
     },
     render: () => {
         const all = db.tx(); const body = document.getElementById('tableBody'); const today = new Date().toLocaleDateString('en-CA');
-        let filtered = (CURRENT_VIEW === 'entry') ? all.filter(x => x.user === VIEWING_USER && x.date === today) : all.filter(x => x.user === VIEWING_USER && x.month === parseInt(document.getElementById('filterMonth').value) && x.year === parseInt(document.getElementById('filterYear').value));
+        let filtered = (CURRENT_VIEW === 'entry' || CURRENT_VIEW === 'backup') ? all.filter(x => x.user === VIEWING_USER && x.date === today) : all.filter(x => x.user === VIEWING_USER && x.month === parseInt(document.getElementById('filterMonth').value) && x.year === parseInt(document.getElementById('filterYear').value));
         document.getElementById('tableLabel').innerText = (CURRENT_VIEW === 'entry') ? "عمليات اليوم" : `أرشيف ${VIEWING_USER}`;
         let ts = 0, tu = 0; body.innerHTML = "";
         filtered.sort((a,b) => b.id - a.id).forEach(x => {
@@ -251,13 +272,22 @@ const admin = {
         const data = db.tx().map(x => ({ "المستخدم": x.user, "التاريخ": x.date, "SYP": x.syp, "USD": x.usd, "البيان": x.note }));
         const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "AlexReport"); XLSX.writeFile(wb, `ALEX_Report_${new Date().toLocaleDateString()}.xlsx`);
-    }
-};
-
-window.onload = () => {
-    const s = db.getS(); if(s) { CUR_USER = s; VIEWING_USER = s; auth.launch(); }
-    document.getElementById('filterMonth').value = new Date().getMonth() + 1;
-};
-</script>
-</body>
-</html>
+    },
+    // وظائف النسخ الاحتياطي الجديدة
+    downloadBackup: () => {
+        const data = JSON.stringify(db.tx());
+        const blob = new Blob([data], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ALEX_Backup_${new Date().toLocaleDateString()}.json`;
+        a.click();
+        ui.showToast("✅ تم تحميل نسخة الأمان");
+    },
+    restoreBackup: (event) => {
+        const file = event.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.resul
